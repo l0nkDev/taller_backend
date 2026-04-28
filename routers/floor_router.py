@@ -10,7 +10,7 @@ from services import floor_service
 router = APIRouter(prefix="/floors", tags=["Floors"])
 
 
-@router.post("/", response_model=FloorRead)
+@router.post("", response_model=FloorRead)
 def create_floor_endpoint(payload: FloorCreate, session: Session = Depends(get_session),
                           current_user: User = Depends(require_admin)):
     new_floor = floor_service.create_new_floor(
@@ -27,7 +27,7 @@ def read_floor_endpoint(floor_id: int, session: Session = Depends(get_session),
     return floor
 
 
-@router.get("/", response_model=list[FloorRead])
+@router.get("", response_model=list[FloorRead])
 def read_floors_endpoint(session: Session = Depends(get_session),
                          current_user: User = Depends(require_any)):
     floors = floor_service.get_all_floors(session=session)

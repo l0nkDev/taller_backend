@@ -12,7 +12,7 @@ from services import order_detail_service, order_service
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
 
-@router.post("/", response_model=OrderRead)
+@router.post("", response_model=OrderRead)
 def create_order_detail_endpoint(payload: OrderDetailCreate, session: Session = Depends(get_session),
                                  current_user: User = Depends(require_admin)):
     new_order_detail = order_detail_service.create_new_order_detail(
@@ -20,7 +20,7 @@ def create_order_detail_endpoint(payload: OrderDetailCreate, session: Session = 
     return new_order_detail
 
 
-@router.put("/", response_model=OrderRead)
+@router.put("", response_model=OrderRead)
 def update_order_detail_endpoint(order_detail_id: int, payload: OrderDetailUpdate, session: Session = Depends(get_session),
                                  current_user: User = Depends(require_admin)):
     order = order_detail_service.update_order_detail(
@@ -30,7 +30,7 @@ def update_order_detail_endpoint(order_detail_id: int, payload: OrderDetailUpdat
     return order
 
 
-@router.delete("/", response_model=bool)
+@router.delete("", response_model=bool)
 def delete_order_detail_endpoint(order_detail_id: int, session: Session = Depends(get_session),
                                  current_user: User = Depends(require_admin)):
     result = order_detail_service.delete_order_detail(
@@ -40,7 +40,7 @@ def delete_order_detail_endpoint(order_detail_id: int, session: Session = Depend
     raise HTTPException(status_code=404, detail="Order not found")
 
 
-@router.delete("/cancel/", response_model=bool)
+@router.delete("/cancel", response_model=bool)
 def delete_order_detail_endpoint(order_id: int, session: Session = Depends(get_session),
                                  current_user: User = Depends(require_admin)):
     result = order_service.delete_order(session=session, order_id=order_id)
@@ -49,7 +49,7 @@ def delete_order_detail_endpoint(order_id: int, session: Session = Depends(get_s
     raise HTTPException(status_code=404, detail="Order not found")
 
 
-@router.get("/at/", response_model=OrderRead)
+@router.get("/at", response_model=OrderRead)
 def delete_order_detail_endpoint(tablegroup_id: int, session: Session = Depends(get_session),
                                  current_user: User = Depends(require_any)):
     result = order_service.get_order_by_tablegroup(
@@ -59,7 +59,7 @@ def delete_order_detail_endpoint(tablegroup_id: int, session: Session = Depends(
     return result
 
 
-@router.post("/pay/", response_model=PaymentRead)
+@router.post("/pay", response_model=PaymentRead)
 def delete_order_detail_endpoint(order_id: int, payload: PaymentCreate, session: Session = Depends(get_session),
                                  current_user: User = Depends(require_admin)):
     result = order_service.pay_order(

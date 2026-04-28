@@ -10,7 +10,7 @@ from services import user_service
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.post("/", response_model=UserRead)
+@router.post("", response_model=UserRead)
 def create_user_endpoint(
         payload: UserCreate,
         session: Session = Depends(get_session),
@@ -20,7 +20,7 @@ def create_user_endpoint(
     return new_user
 
 
-@router.put("/", response_model=UserRead)
+@router.put("", response_model=UserRead)
 def update_USER_endpoint(
         user_id: int,
         payload: UserUpdate,
@@ -34,7 +34,7 @@ def update_USER_endpoint(
     return user
 
 
-@router.get("/", response_model=list[UserRead])
+@router.get("", response_model=list[UserRead])
 def read_dishes_endpoint(
         session: Session = Depends(get_session),
         current_user: User = Depends(require_admin)
@@ -43,7 +43,7 @@ def read_dishes_endpoint(
     return users
 
 
-@router.delete("/")
+@router.delete("")
 def read_dishes_endpoint(
         user_id: int,
         session: Session = Depends(get_session),

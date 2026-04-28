@@ -9,7 +9,7 @@ from services import table_service
 
 router = APIRouter(prefix="/tables", tags=["Tables"])
 
-@router.post("/", response_model=TableRead)
+@router.post("", response_model=TableRead)
 def create_floor_endpoint(payload: TableCreate, session: Session = Depends(get_session),
         current_user: User = Depends(require_admin)):
     new_table = table_service.create_new_table(session=session, table_data=payload)
