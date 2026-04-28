@@ -1,0 +1,16 @@
+# --- Core Framework & Server ---
+fastapi
+uvicorn[standard]
+
+# --- Database & ORM ---
+sqlmodel
+psycopg2-binary
+
+# --- Security & Authentication ---
+python-multipart
+passlib[bcrypt]
+bcrypt<4.0.0
+PyJWT
+
+pytest
+httpx
