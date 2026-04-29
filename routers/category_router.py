@@ -22,7 +22,7 @@ def create_category_endpoint(
     return new_category
 
 
-@router.put("", response_model=CategoryRead)
+@router.put("/", response_model=CategoryRead)
 def update_category_endpoint(
     category_id: int,
     payload: CategoryCreate,

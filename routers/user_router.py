@@ -20,7 +20,7 @@ def create_user_endpoint(
     return new_user
 
 
-@router.put("", response_model=UserRead)
+@router.put("/", response_model=UserRead)
 def update_USER_endpoint(
     user_id: int,
     payload: UserUpdate,
@@ -44,7 +44,7 @@ def read_dishes_endpoint(
     return users
 
 
-@router.delete("")
+@router.delete("/")
 def delete_dishes_endpoint(
     user_id: int,
     session: Session = Depends(get_session),
