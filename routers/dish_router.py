@@ -20,7 +20,7 @@ def create_dish_endpoint(
     return new_dish
 
 
-@router.put("", response_model=DishRead)
+@router.put("/", response_model=DishRead)
 def update_dish_endpoint(
     dish_id: int,
     payload: DishUpdate,
