@@ -5,8 +5,12 @@ from schemas.dish_schemas import DishCreate, DishUpdate
 
 
 def create_new_dish(session: Session, dish_data: DishCreate) -> Dish:
-    db_dish = Dish(name=dish_data.name, category_id=dish_data.category_id,
-                   available=dish_data.available, description=dish_data.description)
+    db_dish = Dish(
+        name=dish_data.name,
+        category_id=dish_data.category_id,
+        available=dish_data.available,
+        description=dish_data.description,
+    )
     session.add(db_dish)
     session.flush()
     price = DishPrice(dish_id=db_dish.id, price=dish_data.price)
@@ -16,7 +20,9 @@ def create_new_dish(session: Session, dish_data: DishCreate) -> Dish:
     return db_dish
 
 
-def update_dish(session: Session, dish_id: int, dish_data: DishUpdate) -> Dish | None:
+def update_dish(
+    session: Session, dish_id: int, dish_data: DishUpdate
+) -> Dish | None:
     db_dish = session.get(Dish, dish_id)
     if not db_dish:
         return None
@@ -28,7 +34,11 @@ def update_dish(session: Session, dish_id: int, dish_data: DishUpdate) -> Dish |
             session.add(new_price)
     db_dish.name = dish_data.name or db_dish.name
     db_dish.category_id = dish_data.category_id or db_dish.category_id
-    db_dish.available = dish_data.available if dish_data.available is not None else db_dish.available
+    db_dish.available = (
+        dish_data.available
+        if dish_data.available is not None
+        else db_dish.available
+    )
     db_dish.description = dish_data.description or db_dish.description
     session.commit()
     session.refresh(db_dish)

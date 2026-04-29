@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+
 class TableCreate(BaseModel):
     pos_x: float
     pos_y: float
@@ -12,6 +13,7 @@ class TableCreate(BaseModel):
     floor_id: int
     current_group_id: Optional[int] = None
 
+
 class TableRead(BaseModel):
     id: int
     pos_x: float
@@ -21,6 +23,7 @@ class TableRead(BaseModel):
     rotation: float
     base_group_id: int
     current_group_id: int
+
 
 class TableUpdate(BaseModel):
     pos_x: Optional[float] = None

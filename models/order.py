@@ -1,8 +1,7 @@
-from enum import Enum
-
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 from typing import List, Optional
+
 
 class Order(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -10,7 +9,7 @@ class Order(SQLModel, table=True):
     was_paid: bool = Field(default=False)
     was_cancelled: bool = Field(default=False)
     tablegroup_id: int = Field(foreign_key="tablegroup.id")
-    
+
     detail: List["OrderDetail"] = Relationship(back_populates="order")
     payment: Optional["Payment"] = Relationship(back_populates="order")
     tablegroup: "TableGroup" = Relationship()

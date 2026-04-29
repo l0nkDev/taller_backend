@@ -2,10 +2,12 @@ from sqlmodel import SQLModel, Field
 from typing import Optional
 from enum import Enum
 
+
 class UserRole(str, Enum):
     ADMIN = "admin"
     WAITER = "waiter"
     KITCHEN = "kitchen"
+
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

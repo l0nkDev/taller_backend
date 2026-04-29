@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from models.user import UserRole
 
+
 class UserCreate(BaseModel):
     username: str
     password: str
@@ -11,6 +12,7 @@ class UserCreate(BaseModel):
     lname: str
     phone: str
     role: Optional[UserRole] = UserRole.WAITER
+
 
 class UserRead(BaseModel):
     id: int
@@ -21,11 +23,10 @@ class UserRead(BaseModel):
     role: UserRole
     is_active: bool
 
+
 class UserUpdate(BaseModel):
     password: Optional[str] = None
     fname: Optional[str] = None
     lname: Optional[str] = None
     phone: Optional[str] = None
     role: Optional[UserRole] = None
-    
-    

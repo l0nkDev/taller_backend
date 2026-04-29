@@ -1,7 +1,6 @@
 from sqlmodel import Session, select
 from core import security
 from models.user import User
-from sqlalchemy.orm import selectinload
 
 from schemas.user_schemas import UserCreate, UserUpdate
 
@@ -13,7 +12,8 @@ def create_new_user(session: Session, user_data: UserCreate) -> User:
         lname=user_data.lname,
         phone=user_data.phone,
         hashed_password=security.get_password_hash(user_data.password),
-        role=user_data.role)
+        role=user_data.role,
+    )
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
@@ -24,8 +24,11 @@ def update_user(session: Session, user_id: int, user_data: UserUpdate) -> User:
     db_user = session.get(User, user_id)
     if not db_user:
         return None
-    db_user.hashed_password = security.get_password_hash(
-        user_data.password) if user_data.password else db_user.hashed_password
+    db_user.hashed_password = (
+        security.get_password_hash(user_data.password)
+        if user_data.password
+        else db_user.hashed_password
+    )
     db_user.fname = user_data.fname or db_user.fname
     db_user.lname = user_data.lname or db_user.lname
     db_user.role = user_data.role or db_user.role

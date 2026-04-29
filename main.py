@@ -16,16 +16,18 @@ from models.table_group import TableGroup
 from models.table import Table
 from models.user import User
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Creating database tables...")
     SQLModel.metadata.create_all(engine)
     yield
 
+
 app = FastAPI(
     title="Tu Café API",
-    description="Backend services for interactive floor map and BI integrations",
-    lifespan=lifespan
+    description="Backend services for Tu Cafe",
+    lifespan=lifespan,
 )
 
 origins = [
@@ -42,7 +44,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from routers import auth_router, floor_router, order_router, table_router, dish_router, category_router, user_router
+from routers import (
+    auth_router,
+    floor_router,
+    order_router,
+    table_router,
+    dish_router,
+    category_router,
+    user_router,
+)
+
 app.include_router(floor_router.router, prefix="/api/v1")
 app.include_router(table_router.router, prefix="/api/v1")
 app.include_router(category_router.router, prefix="/api/v1")
@@ -50,6 +61,7 @@ app.include_router(dish_router.router, prefix="/api/v1")
 app.include_router(order_router.router, prefix="/api/v1")
 app.include_router(auth_router.router, prefix="/api/v1")
 app.include_router(user_router.router, prefix="/api/v1")
+
 
 @app.get("/")
 def health_check():

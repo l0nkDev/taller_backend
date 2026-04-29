@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from sqlmodel import create_engine, Session
 
 load_dotenv()
-DATABASE_URL = os.getenv('CONNECTION_STRING')
+DATABASE_URL = os.getenv("CONNECTION_STRING")
 engine = create_engine(DATABASE_URL, echo=True)
 
 
