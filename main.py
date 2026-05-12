@@ -46,21 +46,21 @@ app.add_middleware(
 
 from routers import (
     auth_router,
+    editor_router,
     floor_router,
     order_router,
-    table_router,
     dish_router,
     category_router,
     user_router,
 )
 
 app.include_router(floor_router.router, prefix="/api/v1")
-app.include_router(table_router.router, prefix="/api/v1")
 app.include_router(category_router.router, prefix="/api/v1")
 app.include_router(dish_router.router, prefix="/api/v1")
 app.include_router(order_router.router, prefix="/api/v1")
 app.include_router(auth_router.router, prefix="/api/v1")
 app.include_router(user_router.router, prefix="/api/v1")
+app.include_router(editor_router.router, prefix="/api/v1")
 
 
 @app.get("/")

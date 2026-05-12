@@ -4,6 +4,9 @@ from typing import List, Optional
 
 class TableGroup(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    pos_x: float
+    pos_y: float
+    rotation: float
     capacity: int
     is_active: bool = Field(default=True)
 

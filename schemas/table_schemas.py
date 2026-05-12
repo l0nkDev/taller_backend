@@ -4,8 +4,8 @@ from pydantic import BaseModel
 
 
 class TableCreate(BaseModel):
-    pos_x: float
-    pos_y: float
+    offset_x: float
+    offset_y: float
     width: float
     height: float
     rotation: float
@@ -16,8 +16,8 @@ class TableCreate(BaseModel):
 
 class TableRead(BaseModel):
     id: int
-    pos_x: float
-    pos_y: float
+    offset_x: float
+    offset_y: float
     width: float
     height: float
     rotation: float
@@ -26,8 +26,8 @@ class TableRead(BaseModel):
 
 
 class TableUpdate(BaseModel):
-    pos_x: Optional[float] = None
-    pos_y: Optional[float] = None
+    offset_x: Optional[float] = None
+    offset_y: Optional[float] = None
     width: Optional[float] = None
     height: Optional[float] = None
     rotation: Optional[float] = None

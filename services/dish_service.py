@@ -31,6 +31,7 @@ def update_dish(
         if current_price.price != dish_data.price:
             current_price.is_active = False
             new_price = DishPrice(dish_id=db_dish.id, price=dish_data.price)
+            session.add(current_price)
             session.add(new_price)
     db_dish.name = dish_data.name or db_dish.name
     db_dish.category_id = dish_data.category_id or db_dish.category_id

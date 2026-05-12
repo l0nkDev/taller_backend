@@ -4,8 +4,8 @@ from typing import Optional
 
 class Table(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    pos_x: float
-    pos_y: float
+    offset_x: float
+    offset_y: float
     width: float
     height: float
     rotation: float
