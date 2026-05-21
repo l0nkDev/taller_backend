@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 from database import get_session
+from models.table_group import TableGroup
 from models.user import User
 from schemas.floor_schemas import FloorRead
 from schemas.table_group_schemas import TableGroupCreate, TableGroupRead, TableGroupUpdate
@@ -59,10 +60,13 @@ async def create_table(payload: TableCreate, session: Session = Depends(get_sess
     new_table = table_service.create_new_table(
         session=session, table_data=payload)
     table_read = TableRead.model_validate(new_table, from_attributes=True)
+    ctg_read = TableGroupRead.model_validate(
+        new_table.current_group, from_attributes=True)
+    btg_read = TableGroupRead.model_validate(
+        new_table.base_group, from_attributes=True)
     event_data = json.dumps(
-        {"action": "create_table", "table": jsonable_encoder(table_read)})
-    floor_id = new_table.current_group.floor_id
-
+        {"action": "create_table", "table": jsonable_encoder(table_read), "current_group": jsonable_encoder(ctg_read), "base_group": jsonable_encoder(btg_read)})
+    floor_id = ctg_read.floor_id
     if floor_id in connected_clients:
         for queue in connected_clients[floor_id]:
             await queue.put(event_data)
@@ -74,15 +78,20 @@ async def create_table(payload: TableCreate, session: Session = Depends(get_sess
 async def update_table(payload: TableUpdate, table_id: int, session: Session = Depends(get_session), current_user: User = Depends(require_admin)):
     new_table = table_service.update_table(
         session=session, table_id=table_id, table_data=payload)
-    table_read = TableRead.model_validate(new_table, from_attributes=True)
+    ctg_read = TableGroupRead.model_validate(
+        new_table.current_group, from_attributes=True)
+    btg_read = TableGroupRead.model_validate(
+        new_table.base_group, from_attributes=True)
+    table_read = TableRead.model_validate(
+        new_table, from_attributes=True)
     event_data = json.dumps(
-        {"action": "update_table", "table": jsonable_encoder(table_read)})
-    floor_id = new_table.current_group.floor_id
+        {"action": "update_table", "table": jsonable_encoder(table_read), "current_group": jsonable_encoder(ctg_read), "base_group": jsonable_encoder(btg_read)})
+    floor_id = ctg_read.floor_id
     if floor_id in connected_clients:
         for queue in connected_clients[floor_id]:
             await queue.put(event_data)
 
-    return {"message": "Mesa actualizada exitosamente", "data": table_read}
+    return {"message": "Mesa actualizada exitosamente", "data": table_read, }
 
 
 @router.post("/tablegroups")
@@ -115,3 +124,18 @@ async def update_group(payload: TableGroupUpdate, tablegroup_id: int, session: S
 
     return {"message": "Grupo actualizado exitosamente", "data": table_read}
 
+
+@router.post("/tablegroups/{tablegroup_id}/disband")
+async def disband_group(tablegroup_id: int, session: Session = Depends(get_session), current_user: User = Depends(require_admin)):
+    group = session.get(TableGroup, tablegroup_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Grupo no encontrado")
+        
+    floor_id = group.floor_id
+    table_service.disband_tablegroup(session, tablegroup_id)
+    if floor_id in connected_clients:
+        event_data = json.dumps({"action": "refresh_floor"})
+        for queue in connected_clients[floor_id]:
+            await queue.put(event_data)
+
+    return {"message": "Grupo desarmado exitosamente"}

@@ -12,7 +12,7 @@ def create_new_order_detail(
     price = session.exec(
         select(DishPrice).where(
             DishPrice.dish_id == order_detail_data.dish_id,
-            DishPrice.is_active is True,
+            DishPrice.is_active == True,
         )
     ).first()
     db_order_detail = OrderDetail(
@@ -24,8 +24,8 @@ def create_new_order_detail(
     db_order = session.exec(
         select(Order).where(
             Order.tablegroup_id == order_detail_data.tablegroup_id,
-            Order.was_paid is False,
-            Order.was_cancelled is False,
+            Order.was_paid == False,
+            Order.was_cancelled == False,
         )
     ).first()
     if db_order is None:
@@ -52,6 +52,8 @@ def update_order_detail(
         db_order_detail.dish_id = order_detail_data.dish_id
     if order_detail_data.quantity is not None:
         db_order_detail.quantity = order_detail_data.quantity
+    if order_detail_data.status is not None:
+        db_order_detail.status = order_detail_data.status
     session.commit()
     session.refresh(db_order_detail)
     return db_order_detail.order

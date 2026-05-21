@@ -15,6 +15,7 @@ from models.payment import Payment
 from models.table_group import TableGroup
 from models.table import Table
 from models.user import User
+from models.wall import Wall
 
 
 @asynccontextmanager

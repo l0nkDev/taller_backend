@@ -15,6 +15,7 @@ class OrderDetailCreate(BaseModel):
 class OrderDetailRead(BaseModel):
     id: int
     dish_id: int
+    dish_price: float
     dish_name: str
     quantity: int
     order_id: int

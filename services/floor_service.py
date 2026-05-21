@@ -12,13 +12,21 @@ def create_new_floor(session: Session, floor_data: FloorCreate) -> Floor:
     session.refresh(db_floor)
     return db_floor
 
+def update_floor(session: Session, floor_id: int, floor_data: FloorCreate) -> Floor | None:
+    db_floor = session.get(Floor, floor_id)
+    if not db_floor:
+        return None
+    db_floor.name = floor_data.name or db_floor.name
+    session.commit()
+    session.refresh(db_floor)
+    return db_floor
 
 def get_floor_by_id(session: Session, floor_id: int) -> Floor | None:
     statement = (
         select(Floor)
         .where(Floor.id == floor_id)
         .options(
-            selectinload(Floor.table_groups.and_(TableGroup.is_active is True))
+            selectinload(Floor.table_groups.and_(TableGroup.is_active == True))
         )
     )
     return session.exec(statement).first()
@@ -26,6 +34,6 @@ def get_floor_by_id(session: Session, floor_id: int) -> Floor | None:
 
 def get_all_floors(session: Session) -> list[Floor]:
     statement = select(Floor).options(
-        selectinload(Floor.table_groups.and_(TableGroup.is_active is True))
+        selectinload(Floor.table_groups.and_(TableGroup.is_active == True))
     )
     return session.exec(statement).all()

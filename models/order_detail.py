@@ -32,3 +32,7 @@ class OrderDetail(SQLModel, table=True):
     @property
     def dish_name(self) -> str | None:
         return self.price.dish.name if self.price and self.price.dish else None
+    
+    @property
+    def dish_price(self) -> str | None:
+        return self.price.price if self.price else None

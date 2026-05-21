@@ -20,7 +20,7 @@ def test_create_new_dish_creates_initial_price(session: Session):
     assert db_dish.id is not None
     assert len(db_dish.prices) == 1
     assert db_dish.prices[0].price == 35.0
-    assert db_dish.prices[0].is_active is True
+    assert db_dish.prices[0].is_active == True
 
 
 def test_update_dish_price_change(session: Session):
@@ -46,7 +46,7 @@ def test_update_dish_price_change(session: Session):
         p for p in updated_dish.prices if p.id == original_price_id
     )
     assert active_price.price == 30.0
-    assert old_price.is_active is False
+    assert old_price.is_active == False
     assert old_price.price == 25.0
 
 
@@ -63,4 +63,4 @@ def test_update_dish_same_price_does_not_create_new_record(session: Session):
 
     # Assert
     assert len(updated_dish.prices) == 1
-    assert updated_dish.prices[0].is_active is True
+    assert updated_dish.prices[0].is_active == True

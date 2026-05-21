@@ -23,6 +23,19 @@ def create_floor_endpoint(
     )
     return new_floor
 
+@router.put("/{floor_id}", response_model=FloorRead)
+def update_floor_endpoint(
+    floor_id: int,
+    payload: FloorCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
+):
+    updated_floor = floor_service.update_floor(
+        session=session, floor_id=floor_id, floor_data=payload
+    )
+    if not updated_floor:
+        raise HTTPException(status_code=404, detail="Floor not found")
+    return updated_floor
 
 @router.get("/{floor_id}", response_model=FloorRead)
 def read_floor_endpoint(
