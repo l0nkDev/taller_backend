@@ -35,5 +35,5 @@ def get_floor_by_id(session: Session, floor_id: int) -> Floor | None:
 def get_all_floors(session: Session) -> list[Floor]:
     statement = select(Floor).options(
         selectinload(Floor.table_groups.and_(TableGroup.is_active == True))
-    )
+    ).order_by(Floor.id.asc())
     return session.exec(statement).all()

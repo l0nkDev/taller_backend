@@ -35,5 +35,5 @@ def update_category(
 
 
 def get_all_categories(session: Session) -> list[Category]:
-    statement = select(Category)
+    statement = select(Category).order_by(Category.id.asc())
     return session.exec(statement).all()

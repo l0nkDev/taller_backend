@@ -49,5 +49,5 @@ def deactivate_user(session: Session, user_id: int) -> bool:
 
 
 def get_all_users(session: Session) -> list[User]:
-    statement = select(User)
+    statement = select(User).order_by(User.id.asc())
     return session.exec(statement).all()

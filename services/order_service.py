@@ -10,7 +10,7 @@ from schemas.payment_schemas import PaymentCreate
 
 
 def get_all_orders(session: Session) -> list[Order]:
-    return session.exec(select(Order)).all()
+    return session.exec(select(Order)).order_by(Order.created_at.asc()).all()
 
 
 def get_order_by_tablegroup(
@@ -59,33 +59,25 @@ def pay_order(
     return payment
 
 def get_all_active_orders(session: Session) -> list[Order]:
-    # Devuelve todas las órdenes que están vivas en el salón
     return session.exec(
-        select(Order).where(Order.was_paid == False, Order.was_cancelled == False)
+        select(Order).where(Order.was_paid == False, Order.was_cancelled == False).order_by(Order.created_at.asc())
     ).all()
 
 def sync_bulk_order(session: Session, order_data: OrderBulkSync) -> Order:
     db_order = get_order_by_tablegroup(session, order_data.tablegroup_id)
-    
-    # Si la mesa no tenía orden, la creamos
     if not db_order:
         db_order = Order(tablegroup_id=order_data.tablegroup_id)
         session.add(db_order)
         session.flush()
     else:
-        # Si ya tenía orden, limpiamos los items "Borrador" (TAKEN) para reemplazarlos
-        # (Los items que ya están "IN_KITCHEN" o "COOKING" no se tocan)
         for detail in db_order.detail:
             if detail.status == DetailStatus.TAKEN:
                 session.delete(detail)
         session.flush()
-
-    # Insertamos el carrito completo del frontend
     for item in order_data.items:
         price = session.exec(
             select(DishPrice).where(DishPrice.dish_id == item.dish_id, DishPrice.is_active == True)
         ).first()
-        
         if price:
             new_detail = OrderDetail(
                 price_id=price.id,
@@ -95,7 +87,6 @@ def sync_bulk_order(session: Session, order_data: OrderBulkSync) -> Order:
                 order_id=db_order.id
             )
             session.add(new_detail)
-            
     session.commit()
     session.refresh(db_order)
     return db_order

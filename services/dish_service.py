@@ -47,5 +47,5 @@ def update_dish(
 
 
 def get_all_dishes(session: Session) -> list[Dish]:
-    statement = select(Dish)
+    statement = select(Dish).order_by(Dish.id.asc())
     return session.exec(statement).all()
