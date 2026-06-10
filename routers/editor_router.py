@@ -9,9 +9,10 @@ from models.user import User
 from schemas.floor_schemas import FloorRead
 from schemas.table_group_schemas import TableGroupCreate, TableGroupRead, TableGroupUpdate
 from schemas.table_schemas import TableCreate, TableRead, TableUpdate
+from schemas.wall_schemas import WallCreate, WallRead, WallUpdate
 from fastapi.encoders import jsonable_encoder
 from core.security import require_any, require_admin
-from services import floor_service, table_service
+from services import floor_service, table_service, wall_service
 
 router = APIRouter(prefix="/editor", tags=["Editor"])
 
@@ -139,3 +140,52 @@ async def disband_group(tablegroup_id: int, session: Session = Depends(get_sessi
             await queue.put(event_data)
 
     return {"message": "Grupo desarmado exitosamente"}
+
+
+@router.post("/walls")
+async def create_wall(payload: WallCreate, session: Session = Depends(get_session), current_user: User = Depends(require_admin)):
+    new_wall = wall_service.create_new_wall(session=session, wall_data=payload)
+    wall_read = WallRead.model_validate(new_wall, from_attributes=True)
+    event_data = json.dumps({"action": "create_wall", "wall": jsonable_encoder(wall_read)})
+    
+    floor_id = payload.floor_id
+    if floor_id in connected_clients:
+        for queue in connected_clients[floor_id]:
+            await queue.put(event_data)
+            
+    return {"message": "Pared creada", "data": wall_read}
+
+
+@router.patch("/walls/{wall_id}")
+async def update_wall(payload: WallUpdate, wall_id: int, session: Session = Depends(get_session), current_user: User = Depends(require_admin)):
+    updated_wall = wall_service.update_wall(session=session, wall_id=wall_id, wall_data=payload)
+    if not updated_wall:
+        raise HTTPException(status_code=404, detail="Pared no encontrada")
+        
+    wall_read = WallRead.model_validate(updated_wall, from_attributes=True)
+    event_data = json.dumps({"action": "update_wall", "wall": jsonable_encoder(wall_read)})
+    
+    floor_id = updated_wall.floor_id
+    if floor_id in connected_clients:
+        for queue in connected_clients[floor_id]:
+            await queue.put(event_data)
+            
+    return {"message": "Pared actualizada", "data": wall_read}
+
+
+@router.delete("/walls/{wall_id}")
+async def delete_wall(wall_id: int, session: Session = Depends(get_session), current_user: User = Depends(require_admin)):
+    from models.wall import Wall
+    db_wall = session.get(Wall, wall_id)
+    if not db_wall:
+        raise HTTPException(status_code=404, detail="Pared no encontrada")
+        
+    floor_id = db_wall.floor_id
+    wall_service.delete_wall(session, wall_id)
+    
+    if floor_id in connected_clients:
+        event_data = json.dumps({"action": "delete_wall", "wall_id": wall_id})
+        for queue in connected_clients[floor_id]:
+            await queue.put(event_data)
+            
+    return {"message": "Pared eliminada"}

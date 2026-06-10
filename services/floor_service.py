@@ -26,7 +26,8 @@ def get_floor_by_id(session: Session, floor_id: int) -> Floor | None:
         select(Floor)
         .where(Floor.id == floor_id)
         .options(
-            selectinload(Floor.table_groups.and_(TableGroup.is_active == True))
+            selectinload(Floor.table_groups.and_(TableGroup.is_active == True)),
+            selectinload(Floor.walls)
         )
     )
     return session.exec(statement).first()
@@ -34,6 +35,7 @@ def get_floor_by_id(session: Session, floor_id: int) -> Floor | None:
 
 def get_all_floors(session: Session) -> list[Floor]:
     statement = select(Floor).options(
-        selectinload(Floor.table_groups.and_(TableGroup.is_active == True))
+        selectinload(Floor.table_groups.and_(TableGroup.is_active == True)),
+        selectinload(Floor.walls)
     ).order_by(Floor.id.asc())
     return session.exec(statement).all()
