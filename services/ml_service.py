@@ -1,0 +1,161 @@
+import pandas as pd
+import numpy as np
+from sqlmodel import Session, select
+from datetime import datetime, timedelta
+from sklearn.ensemble import RandomForestRegressor
+
+from models.payment import Payment
+from models.order import Order
+from schemas.bi_schemas import Projection, ProjectionResponse, ProjectionTimeframe
+
+def generate_projections(session: Session, timeframe: ProjectionTimeframe = ProjectionTimeframe.NEXT_WEEK_DAILY) -> ProjectionResponse:
+    # 1. Fetch all historical payments
+    payments = session.exec(select(Payment).join(Order).where(Order.was_paid == True)).all()
+    
+    if len(payments) < 10:
+        return ProjectionResponse(
+            success=False,
+            message="Se requiere más historial de ventas para generar proyecciones.",
+            projections=[]
+        )
+        
+    # 2. Prepare Data
+    data = []
+    for p in payments:
+        data.append({
+            "datetime": p.created_at,
+            "date": p.created_at.date(),
+            "hour": p.created_at.hour,
+            "revenue": p.total
+        })
+        
+    df = pd.DataFrame(data)
+    
+    if timeframe == ProjectionTimeframe.TOMORROW_HOURLY:
+        # Aggregate by date and hour
+        hourly_revenue = df.groupby(['date', 'hour'])['revenue'].sum().reset_index()
+        hourly_revenue = hourly_revenue.sort_values(['date', 'hour'])
+        
+        if len(hourly_revenue) < 24:
+             return ProjectionResponse(
+                 success=False,
+                 message="No hay suficiente historial por hora.",
+                 projections=[]
+             )
+             
+        hourly_revenue['date'] = pd.to_datetime(hourly_revenue['date'])
+        hourly_revenue['day_of_week'] = hourly_revenue['date'].dt.dayofweek
+        hourly_revenue['is_weekend'] = hourly_revenue['day_of_week'].apply(lambda x: 1 if x >= 5 else 0)
+        
+        # Lag feature (previous hour revenue)
+        hourly_revenue['prev_hour_revenue'] = hourly_revenue['revenue'].shift(1)
+        ml_df = hourly_revenue.dropna()
+        
+        X = ml_df[['day_of_week', 'is_weekend', 'hour', 'prev_hour_revenue']]
+        y = ml_df['revenue']
+        
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(X, y)
+        
+        last_date = hourly_revenue['date'].iloc[-1]
+        last_hour = hourly_revenue['hour'].iloc[-1]
+        last_revenue = hourly_revenue['revenue'].iloc[-1]
+        
+        # Predict for tomorrow from 08:00 to 23:00
+        tomorrow = datetime.now().date() + timedelta(days=1)
+        
+        projections = []
+        current_prev_revenue = last_revenue
+        
+        for h in range(8, 24):
+            next_features = pd.DataFrame({
+                'day_of_week': [tomorrow.weekday()],
+                'is_weekend': [1 if tomorrow.weekday() >= 5 else 0],
+                'hour': [h],
+                'prev_hour_revenue': [current_prev_revenue]
+            })
+            
+            pred_revenue = model.predict(next_features)[0]
+            pred_revenue = max(0, pred_revenue)
+            
+            projections.append(Projection(
+                date=f"{tomorrow.strftime('%Y-%m-%d')} {str(h).zfill(2)}:00",
+                expected_revenue=round(pred_revenue, 2)
+            ))
+            current_prev_revenue = pred_revenue
+            
+        return ProjectionResponse(
+            success=True,
+            message="Proyecciones por hora generadas.",
+            projections=projections
+        )
+        
+    else:
+        # Daily aggregations for NEXT_WEEK_DAILY and NEXT_MONTH_DAILY
+        daily_revenue = df.groupby('date')['revenue'].sum().reset_index()
+        daily_revenue = daily_revenue.sort_values('date')
+        
+        # If we have less than 7 days of aggregated data, abort
+        if len(daily_revenue) < 7:
+            return ProjectionResponse(
+                success=False,
+                message="Se requieren al menos 7 días de historial para generar proyecciones.",
+                projections=[]
+            )
+            
+        # 3. Feature Engineering
+        daily_revenue['date'] = pd.to_datetime(daily_revenue['date'])
+        daily_revenue['day_of_week'] = daily_revenue['date'].dt.dayofweek
+        daily_revenue['is_weekend'] = daily_revenue['day_of_week'].apply(lambda x: 1 if x >= 5 else 0)
+        daily_revenue['month'] = daily_revenue['date'].dt.month
+        
+        # Lag features (previous day revenue)
+        daily_revenue['prev_day_revenue'] = daily_revenue['revenue'].shift(1)
+        
+        # Drop rows with NaN (due to shift)
+        ml_df = daily_revenue.dropna()
+        
+        # 4. Train Model
+        X = ml_df[['day_of_week', 'is_weekend', 'month', 'prev_day_revenue']]
+        y = ml_df['revenue']
+        
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(X, y)
+        
+        # 5. Predict
+        last_date = daily_revenue['date'].iloc[-1]
+        last_revenue = daily_revenue['revenue'].iloc[-1]
+        
+        days_to_predict = 7 if timeframe == ProjectionTimeframe.NEXT_WEEK_DAILY else 30
+        
+        projections = []
+        current_prev_revenue = last_revenue
+        
+        for i in range(1, days_to_predict + 1):
+            next_date = last_date + pd.Timedelta(days=i)
+            
+            # Prepare features for prediction
+            next_features = pd.DataFrame({
+                'day_of_week': [next_date.dayofweek],
+                'is_weekend': [1 if next_date.dayofweek >= 5 else 0],
+                'month': [next_date.month],
+                'prev_day_revenue': [current_prev_revenue]
+            })
+            
+            pred_revenue = model.predict(next_features)[0]
+            
+            # Prevent negative predictions
+            pred_revenue = max(0, pred_revenue)
+            
+            projections.append(Projection(
+                date=next_date.strftime('%Y-%m-%d'),
+                expected_revenue=round(pred_revenue, 2)
+            ))
+            
+            current_prev_revenue = pred_revenue
+            
+        return ProjectionResponse(
+            success=True,
+            message=f"Proyecciones generadas para {days_to_predict} días.",
+            projections=projections
+        )

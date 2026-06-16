@@ -11,6 +11,9 @@ python-multipart
 passlib[bcrypt]
 bcrypt<4.0.0
 PyJWT
+scikit-learn
+pandas
+numpy
 
 pytest
 httpx
