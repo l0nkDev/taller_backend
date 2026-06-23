@@ -12,6 +12,7 @@ from models.table_group import TableGroup
 from collections import defaultdict
 import math
 from schemas.bi_schemas import SalesHistoryItem, PaginatedSalesHistory, DashboardStats, TopDish, PopularFloor, SalesPerDay, SalesPerWeek, SalesPerMonth
+from services import ml_service
 
 def get_sales_history(
     session: Session, 
@@ -151,6 +152,8 @@ def get_dashboard_stats(session: Session, start_date: datetime | None = None, en
         for k, v in sorted(monthly_stats.items())
     ]
     
+    discount_recommendations = ml_service.generate_discount_recommendations(session)
+
     return DashboardStats(
         total_revenue=total_revenue,
         total_orders=total_orders,
@@ -158,5 +161,6 @@ def get_dashboard_stats(session: Session, start_date: datetime | None = None, en
         popular_floors=popular_floors,
         sales_per_day=sales_per_day,
         sales_per_week=sales_per_week,
-        sales_per_month=sales_per_month
+        sales_per_month=sales_per_month,
+        discount_recommendations=discount_recommendations
     )

@@ -52,6 +52,15 @@ class ProjectionResponse(BaseModel):
     message: str
     projections: List[Projection]
 
+class DiscountRecommendation(BaseModel):
+    dish_id: int
+    dish_name: str
+    current_price: float
+    current_cost: float
+    margin_percentage: float
+    predicted_sales_next_week: int
+    reason: str
+
 class DashboardStats(BaseModel):
     total_revenue: float
     total_orders: int
@@ -60,3 +69,4 @@ class DashboardStats(BaseModel):
     sales_per_day: List[SalesPerDay]
     sales_per_week: List[SalesPerWeek]
     sales_per_month: List[SalesPerMonth]
+    discount_recommendations: List[DiscountRecommendation] = []

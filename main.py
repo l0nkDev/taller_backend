@@ -7,6 +7,7 @@ from database import engine
 
 from models.category import Category
 from models.dish_price import DishPrice
+from models.dish_cost import DishCost
 from models.dish import Dish
 from models.floor import Floor
 from models.order_detail import OrderDetail
@@ -54,6 +55,7 @@ from routers import (
     category_router,
     user_router,
     bi_router,
+    ai_router,
 )
 
 app.include_router(floor_router.router, prefix="/api/v1")
@@ -64,6 +66,7 @@ app.include_router(auth_router.router, prefix="/api/v1")
 app.include_router(user_router.router, prefix="/api/v1")
 app.include_router(editor_router.router, prefix="/api/v1")
 app.include_router(bi_router.router, prefix="/api/v1")
+app.include_router(ai_router.router, prefix="/api/v1")
 
 
 @app.get("/")

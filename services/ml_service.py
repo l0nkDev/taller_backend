@@ -6,7 +6,9 @@ from sklearn.ensemble import RandomForestRegressor
 
 from models.payment import Payment
 from models.order import Order
-from schemas.bi_schemas import Projection, ProjectionResponse, ProjectionTimeframe
+from models.order_detail import OrderDetail
+from models.dish import Dish
+from schemas.bi_schemas import Projection, ProjectionResponse, ProjectionTimeframe, DiscountRecommendation
 
 def generate_projections(session: Session, timeframe: ProjectionTimeframe = ProjectionTimeframe.NEXT_WEEK_DAILY) -> ProjectionResponse:
     # 1. Fetch all historical payments
@@ -159,3 +161,102 @@ def generate_projections(session: Session, timeframe: ProjectionTimeframe = Proj
             message=f"Proyecciones generadas para {days_to_predict} días.",
             projections=projections
         )
+
+def generate_discount_recommendations(session: Session) -> list[DiscountRecommendation]:
+    # Fetch orders and details
+    details_query = select(OrderDetail).join(Order).where(Order.was_paid == True)
+    details = session.exec(details_query).all()
+    
+    if not details:
+        return []
+
+    data = []
+    for d in details:
+        if d.dish_id:
+            data.append({
+                "dish_id": d.dish_id,
+                "date": d.order.created_at.date(),
+                "quantity": d.quantity
+            })
+            
+    if not data:
+        return []
+
+    df = pd.DataFrame(data)
+    
+    recommendations = []
+    dishes = session.exec(select(Dish).where(Dish.available == True)).all()
+    
+    for dish in dishes:
+        if dish.price is None or dish.price <= 0:
+            continue
+            
+        cost = dish.cost or 0.0
+        margin = (dish.price - cost) / dish.price
+        
+        # Only analyze if margin > 50%
+        if margin <= 0.50:
+            continue
+            
+        # Filter df for this dish
+        dish_df = df[df['dish_id'] == dish.id]
+        
+        if len(dish_df) == 0:
+            continue
+            
+        # Group by date
+        daily_qty = dish_df.groupby('date')['quantity'].sum().reset_index()
+        daily_qty['date'] = pd.to_datetime(daily_qty['date'])
+        
+        # We need at least 3 days of sales for a tiny bit of history to avoid crashing
+        if len(daily_qty) < 3:
+            continue
+            
+        daily_qty = daily_qty.sort_values('date')
+        daily_qty['day_of_week'] = daily_qty['date'].dt.dayofweek
+        daily_qty['prev_day_qty'] = daily_qty['quantity'].shift(1)
+        
+        ml_df = daily_qty.dropna()
+        if len(ml_df) == 0:
+            continue
+            
+        X = ml_df[['day_of_week', 'prev_day_qty']]
+        y = ml_df['quantity']
+        
+        model = RandomForestRegressor(n_estimators=50, random_state=42)
+        model.fit(X, y)
+        
+        last_date = daily_qty['date'].iloc[-1]
+        last_qty = daily_qty['quantity'].iloc[-1]
+        
+        predicted_total = 0
+        current_prev = last_qty
+        
+        for i in range(1, 8): # Next 7 days
+            next_date = last_date + pd.Timedelta(days=i)
+            next_features = pd.DataFrame({
+                'day_of_week': [next_date.dayofweek],
+                'prev_day_qty': [current_prev]
+            })
+            
+            pred = model.predict(next_features)[0]
+            pred = max(0, pred)
+            predicted_total += pred
+            current_prev = pred
+            
+        predicted_sales = int(round(predicted_total))
+        
+        # If predicted next week sales is < 15, recommend discount!
+        if predicted_sales < 15:
+            reason = f"Tiene un alto margen de ganancia ({int(margin*100)}%), pero el modelo proyecta bajas ventas ({predicted_sales} unidades) para la próxima semana. Un descuento podría impulsar la demanda sin comprometer utilidades."
+            recommendations.append(DiscountRecommendation(
+                dish_id=dish.id,
+                dish_name=dish.name,
+                current_price=dish.price,
+                current_cost=cost,
+                margin_percentage=margin,
+                predicted_sales_next_week=predicted_sales,
+                reason=reason
+            ))
+            
+    return recommendations
