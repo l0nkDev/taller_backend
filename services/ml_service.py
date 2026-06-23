@@ -1,4 +1,5 @@
 import pandas as pd
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 from datetime import datetime, timedelta
 from sklearn.ensemble import RandomForestRegressor
@@ -198,7 +199,10 @@ def generate_discount_recommendations(
 ) -> list[DiscountRecommendation]:
     # Fetch orders and details
     details_query = (
-        select(OrderDetail).join(Order).where(Order.was_paid == True)
+        select(OrderDetail)
+        .join(Order)
+        .where(Order.was_paid == True)
+        .options(selectinload(OrderDetail.price), selectinload(OrderDetail.order))
     )
     details = session.exec(details_query).all()
 
@@ -245,6 +249,18 @@ def generate_discount_recommendations(
         daily_qty = dish_df.groupby("date")["quantity"].sum().reset_index()
         daily_qty["date"] = pd.to_datetime(daily_qty["date"])
 
+        # Fill missing dates with 0 up to today!
+        daily_qty = daily_qty.set_index("date")
+        if daily_qty.index.empty:
+            continue
+        
+        min_date = daily_qty.index.min()
+        today = pd.Timestamp(datetime.now().date())
+        full_range = pd.date_range(start=min_date, end=today, freq='D')
+        
+        daily_qty = daily_qty.reindex(full_range, fill_value=0).reset_index()
+        daily_qty.rename(columns={"index": "date"}, inplace=True)
+
         # We need at least 3 days of sales for a tiny bit of history to avoid crashing
         if len(daily_qty) < 3:
             continue
@@ -284,6 +300,11 @@ def generate_discount_recommendations(
             current_prev = pred
 
         predicted_sales = int(round(predicted_total))
+
+        # Heuristic: If the dish has completely flatlined (0 sales) in the last 3 days, 
+        # override the random forest's optimistic averaging to 0.
+        if len(daily_qty) >= 3 and sum(daily_qty["quantity"].iloc[-3:]) == 0:
+            predicted_sales = 0
 
         # If predicted next week sales is < 15, recommend discount!
         if predicted_sales < 15:
