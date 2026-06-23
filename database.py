@@ -6,10 +6,7 @@ from sqlmodel import create_engine, Session
 load_dotenv()
 DATABASE_URL = os.getenv("CONNECTION_STRING")
 engine = create_engine(
-    DATABASE_URL,
-    echo=False,
-    pool_pre_ping=True,
-    pool_recycle=300
+    DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300
 )
 
 

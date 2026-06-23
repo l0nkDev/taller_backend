@@ -11,11 +11,13 @@ class OrderRead(BaseModel):
     was_cancelled: bool
     detail: list[OrderDetailRead] = []
 
+
 class OrderItemCreate(BaseModel):
     dish_id: int
     quantity: int
     discount: float = 0.0
     status: DetailStatus = DetailStatus.TAKEN
+
 
 class OrderBulkSync(BaseModel):
     tablegroup_id: int

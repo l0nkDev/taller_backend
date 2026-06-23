@@ -2,7 +2,7 @@ from sqlmodel import Session, select
 
 from models.dish_price import DishPrice
 from models.order import Order
-from models.order_detail import OrderDetail, OrderDetail
+from models.order_detail import OrderDetail
 from models.order_detail import DetailStatus
 from models.payment import Payment
 from schemas.order_schemas import OrderBulkSync
@@ -58,10 +58,14 @@ def pay_order(
     session.refresh(payment)
     return payment
 
+
 def get_all_active_orders(session: Session) -> list[Order]:
     return session.exec(
-        select(Order).where(Order.was_paid == False, Order.was_cancelled == False).order_by(Order.created_at.asc())
+        select(Order)
+        .where(Order.was_paid == False, Order.was_cancelled == False)
+        .order_by(Order.created_at.asc())
     ).all()
+
 
 def sync_bulk_order(session: Session, order_data: OrderBulkSync) -> Order:
     db_order = get_order_by_tablegroup(session, order_data.tablegroup_id)
@@ -76,7 +80,9 @@ def sync_bulk_order(session: Session, order_data: OrderBulkSync) -> Order:
         session.flush()
     for item in order_data.items:
         price = session.exec(
-            select(DishPrice).where(DishPrice.dish_id == item.dish_id, DishPrice.is_active == True)
+            select(DishPrice).where(
+                DishPrice.dish_id == item.dish_id, DishPrice.is_active == True
+            )
         ).first()
         if price:
             new_detail = OrderDetail(
@@ -84,7 +90,7 @@ def sync_bulk_order(session: Session, order_data: OrderBulkSync) -> Order:
                 quantity=item.quantity,
                 discount=item.discount,
                 status=item.status,
-                order_id=db_order.id
+                order_id=db_order.id,
             )
             session.add(new_detail)
     session.commit()

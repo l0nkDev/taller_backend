@@ -1,1 +1,23 @@
+# ruff.toml
 line-length = 79
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "venv",
+    "__pycache__",
+]
+
+[lint]
+# Enable Pyflakes (F) and a subset of the pycodestyle (E)  codes by default.
+select = ["E4", "E7", "E9", "F"]
+
+# Ignore F821 as per original flake8 config
+# Ignore E712 because SQLAlchemy requires `== True` and `== False` in query expressions
+ignore = ["F821", "E712"]
+
+[lint.per-file-ignores]
+# Ignore unused imports (F401) and module level import not at top of file (E402) in main.py
+"main.py" = ["F401", "E402"]

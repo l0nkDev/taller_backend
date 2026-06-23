@@ -12,5 +12,4 @@ class Wall(SQLModel, table=True):
     y2: float
     isDoor: bool = Field(default=False)
 
-
     floor: "Floor" = Relationship(back_populates="walls")

@@ -11,9 +11,8 @@ class Order(SQLModel, table=True):
     tablegroup_id: int = Field(foreign_key="tablegroup.id")
 
     detail: List["OrderDetail"] = Relationship(
-        back_populates="order", sa_relationship_kwargs={
-        "order_by": "OrderDetail.id" 
-        }
+        back_populates="order",
+        sa_relationship_kwargs={"order_by": "OrderDetail.id"},
     )
     payment: Optional["Payment"] = Relationship(back_populates="order")
     tablegroup: "TableGroup" = Relationship()

@@ -18,6 +18,7 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 
 connected_order_clients = []
 
+
 # --- 1. CONFIGURACIÓN SSE ---
 async def order_event_generator(request: Request):
     client_queue = asyncio.Queue()
@@ -34,14 +35,19 @@ async def order_event_generator(request: Request):
     finally:
         connected_order_clients.remove(client_queue)
 
+
 @router.get("/stream")
 async def sse_orders_updates(request: Request):
-    return StreamingResponse(order_event_generator(request), media_type="text/event-stream")
+    return StreamingResponse(
+        order_event_generator(request), media_type="text/event-stream"
+    )
+
 
 async def notify_order_clients(action: str, payload: dict = None):
     event_data = json.dumps({"action": action, "data": payload})
     for queue in connected_order_clients:
         await queue.put(event_data)
+
 
 @router.post("", response_model=OrderRead)
 def create_order_detail_endpoint(
@@ -71,7 +77,7 @@ async def update_order_detail_endpoint(
         raise HTTPException(status_code=404, detail="Order not found")
     order_read = OrderRead.model_validate(order, from_attributes=True)
     await notify_order_clients("update_order", jsonable_encoder(order_read))
-    
+
     return order
 
 
@@ -102,12 +108,14 @@ def get_order_at_endpoint(
         raise HTTPException(status_code=404, detail="Order not found")
     return result
 
+
 @router.get("/active", response_model=list[OrderRead])
 def get_active_orders_endpoint(
     session: Session = Depends(get_session),
     current_user: User = Depends(require_any),
 ):
     return order_service.get_all_active_orders(session)
+
 
 @router.post("/bulk-sync", response_model=OrderRead)
 async def sync_bulk_order_endpoint(
@@ -117,7 +125,7 @@ async def sync_bulk_order_endpoint(
 ):
     order = order_service.sync_bulk_order(session=session, order_data=payload)
     order_read = OrderRead.model_validate(order, from_attributes=True)
-    
+
     await notify_order_clients("update_order", jsonable_encoder(order_read))
     return order
 
@@ -135,7 +143,7 @@ async def pay_order_endpoint(
     if result:
         await notify_order_clients("remove_order", {"order_id": order_id})
         return result
-        
+
     raise HTTPException(status_code=404, detail="Order not found")
 
 

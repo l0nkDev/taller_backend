@@ -12,7 +12,10 @@ def create_new_floor(session: Session, floor_data: FloorCreate) -> Floor:
     session.refresh(db_floor)
     return db_floor
 
-def update_floor(session: Session, floor_id: int, floor_data: FloorCreate) -> Floor | None:
+
+def update_floor(
+    session: Session, floor_id: int, floor_data: FloorCreate
+) -> Floor | None:
     db_floor = session.get(Floor, floor_id)
     if not db_floor:
         return None
@@ -21,21 +24,30 @@ def update_floor(session: Session, floor_id: int, floor_data: FloorCreate) -> Fl
     session.refresh(db_floor)
     return db_floor
 
+
 def get_floor_by_id(session: Session, floor_id: int) -> Floor | None:
     statement = (
         select(Floor)
         .where(Floor.id == floor_id)
         .options(
-            selectinload(Floor.table_groups.and_(TableGroup.is_active == True)),
-            selectinload(Floor.walls)
+            selectinload(
+                Floor.table_groups.and_(TableGroup.is_active == True)
+            ),
+            selectinload(Floor.walls),
         )
     )
     return session.exec(statement).first()
 
 
 def get_all_floors(session: Session) -> list[Floor]:
-    statement = select(Floor).options(
-        selectinload(Floor.table_groups.and_(TableGroup.is_active == True)),
-        selectinload(Floor.walls)
-    ).order_by(Floor.id.asc())
+    statement = (
+        select(Floor)
+        .options(
+            selectinload(
+                Floor.table_groups.and_(TableGroup.is_active == True)
+            ),
+            selectinload(Floor.walls),
+        )
+        .order_by(Floor.id.asc())
+    )
     return session.exec(statement).all()

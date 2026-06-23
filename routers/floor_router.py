@@ -1,7 +1,5 @@
-import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from core.security import require_admin, require_any
@@ -11,6 +9,7 @@ from schemas.floor_schemas import FloorCreate, FloorRead
 from services import floor_service
 
 router = APIRouter(prefix="/floors", tags=["Floors"])
+
 
 @router.post("", response_model=FloorRead)
 def create_floor_endpoint(
@@ -22,6 +21,7 @@ def create_floor_endpoint(
         session=session, floor_data=payload
     )
     return new_floor
+
 
 @router.put("/{floor_id}", response_model=FloorRead)
 def update_floor_endpoint(
@@ -36,6 +36,7 @@ def update_floor_endpoint(
     if not updated_floor:
         raise HTTPException(status_code=404, detail="Floor not found")
     return updated_floor
+
 
 @router.get("/{floor_id}", response_model=FloorRead)
 def read_floor_endpoint(

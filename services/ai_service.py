@@ -17,19 +17,32 @@ except Exception as e:
     client = None
     print(f"Failed to initialize Gemini Client: {e}")
 
-MODEL_NAME = "gemini-3.1-flash-lite" # The requested Flash Lite model
+MODEL_NAME = "gemini-3.1-flash-lite"  # The requested Flash Lite model
 
-async def parse_order_with_ai(session: Session, text: Optional[str] = None, audio: Optional[UploadFile] = None) -> AIOrderResponse:
+
+async def parse_order_with_ai(
+    session: Session,
+    text: Optional[str] = None,
+    audio: Optional[UploadFile] = None,
+) -> AIOrderResponse:
     if not client:
-        raise ValueError("Gemini API key is not configured or client failed to initialize.")
+        raise ValueError(
+            "Gemini API key is not configured or client failed to initialize."
+        )
 
     if not text and not audio:
         raise ValueError("Must provide either text or audio to parse.")
 
     # Fetch available dishes to provide context to the AI
     dishes = get_all_dishes(session)
-    menu_list = [{"id": d.id, "name": d.name, "price": d.price} for d in dishes if d.available]
-    menu_text = "CURRENT MENU (JSON FORMAT):\n" + json.dumps(menu_list, indent=2)
+    menu_list = [
+        {"id": d.id, "name": d.name, "price": d.price}
+        for d in dishes
+        if d.available
+    ]
+    menu_text = "CURRENT MENU (JSON FORMAT):\n" + json.dumps(
+        menu_list, indent=2
+    )
 
     system_instruction = (
         "You are an intelligent order-taking assistant for a restaurant serving local and traditional food. "
@@ -46,30 +59,39 @@ async def parse_order_with_ai(session: Session, text: Optional[str] = None, audi
 
     if audio:
         # Save the uploaded file to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio:
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=".webm"
+        ) as temp_audio:
             content = await audio.read()
             if len(content) == 0:
-                raise ValueError("The recorded audio file is empty. Please check your microphone permissions.")
+                raise ValueError(
+                    "The recorded audio file is empty. Please check your microphone permissions."
+                )
             temp_audio.write(content)
             temp_audio_path = temp_audio.name
-        
+
         # Upload the audio file to Gemini using the Files API
         uploaded_file = client.files.upload(
             file=temp_audio_path,
-            config={'mime_type': audio.content_type, 'display_name': audio.filename}
+            config={
+                "mime_type": audio.content_type,
+                "display_name": audio.filename,
+            },
         )
-        
+
         # Wait for the file to be processed
         while uploaded_file.state.name == "PROCESSING":
             time.sleep(1)
             uploaded_file = client.files.get(name=uploaded_file.name)
-            
+
         if uploaded_file.state.name == "FAILED":
             error_details = getattr(uploaded_file, "error", "Unknown error")
-            raise ValueError(f"Audio file processing failed by Gemini. Details: {error_details}")
+            raise ValueError(
+                f"Audio file processing failed by Gemini. Details: {error_details}"
+            )
 
         contents.append(uploaded_file)
-        
+
         if text:
             contents.append(text)
         else:
@@ -84,8 +106,8 @@ async def parse_order_with_ai(session: Session, text: Optional[str] = None, audi
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
             response_schema=AIOrderResponse,
-            system_instruction=system_instruction
-        )
+            system_instruction=system_instruction,
+        ),
     )
 
     # If we uploaded a file, it's good practice to delete it from Gemini's storage afterwards

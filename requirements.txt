@@ -17,6 +17,5 @@ numpy
 
 pytest
 httpx
-flake8
 ruff
 google-genai
