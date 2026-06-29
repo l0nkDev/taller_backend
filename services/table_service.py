@@ -222,3 +222,21 @@ def disband_tablegroup(session: Session, group_id: int):
         session.add(complex_group)
 
     session.commit()
+
+def delete_table(session: Session, table_id: int):
+    table = session.get(Table, table_id)
+    if not table:
+        return None
+    
+    # Also delete the base group since a table has a 1-to-1 relationship with its base_group
+    base_group = session.get(TableGroup, table.base_group_id)
+    
+    session.delete(table)
+    if base_group:
+        base_group.is_active = False
+        session.add(base_group)
+        # Alternatively we could physically delete it: session.delete(base_group)
+        # We will soft delete it to avoid breaking historical orders that reference this base group
+        
+    session.commit()
+    return table

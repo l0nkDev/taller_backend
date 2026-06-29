@@ -259,3 +259,24 @@ async def delete_wall(
             await queue.put(event_data)
 
     return {"message": "Pared eliminada"}
+
+@router.delete("/tables/{table_id}")
+async def delete_table(
+    table_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
+):
+    from models.table import Table
+    db_table = session.get(Table, table_id)
+    if not db_table:
+        raise HTTPException(status_code=404, detail="Mesa no encontrada")
+        
+    floor_id = db_table.base_group.floor_id
+    table_service.delete_table(session, table_id)
+    
+    if floor_id in connected_clients:
+        event_data = json.dumps({"action": "delete_table", "table_id": table_id})
+        for queue in connected_clients[floor_id]:
+            await queue.put(event_data)
+            
+    return {"message": "Mesa eliminada"}

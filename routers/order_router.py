@@ -66,7 +66,7 @@ async def update_order_detail_endpoint(
     order_detail_id: int,
     payload: OrderDetailUpdate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_any),
 ):
     order = order_detail_service.update_order_detail(
         session=session,
